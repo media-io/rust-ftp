@@ -9,8 +9,6 @@ use chrono::{DateTime, Utc};
 use openssl::ssl::{Ssl, SslContext};
 use regex::Regex;
 use std::borrow::Cow;
-// #[cfg(feature = "secure")]
-// use std::error::Error;
 use std::io::{copy, BufRead, BufReader, BufWriter, Cursor, Read, Write};
 use std::net::ToSocketAddrs;
 use std::net::{SocketAddr, TcpStream};
@@ -400,6 +398,21 @@ impl FtpStream {
     /// This stores a file on the server.
     pub fn put<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         self.put_file(filename, r)?;
+        self.read_response_in(&[
+            status::CLOSING_DATA_CONNECTION,
+            status::REQUESTED_FILE_ACTION_OK,
+        ])
+        .map(|_| ())
+    }
+
+    pub fn start_put_file(&mut self, filename: &str) -> Result<BufWriter<DataStream>> {
+        let stor_command = format!("STOR {}\r\n", filename);
+        let data_stream = BufWriter::new(self.data_command(&stor_command)?);
+        self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND])?;
+        Ok(data_stream)
+    }
+
+    pub fn finish_put_file(&mut self) -> Result<()> {
         self.read_response_in(&[
             status::CLOSING_DATA_CONNECTION,
             status::REQUESTED_FILE_ACTION_OK,
