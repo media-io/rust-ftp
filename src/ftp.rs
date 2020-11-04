@@ -40,7 +40,7 @@ impl FtpStream {
     #[cfg(not(feature = "secure"))]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
         TcpStream::connect(addr)
-            .map_err(|e| FtpError::ConnectionError(e))
+            .map_err(FtpError::ConnectionError)
             .and_then(|stream| {
                 let mut ftp_stream = FtpStream {
                     reader: BufReader::new(DataStream::Tcp(stream)),
@@ -149,8 +149,8 @@ impl FtpStream {
     fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
         self.pasv()
             .and_then(|addr| self.write_str(cmd).map(|_| addr))
-            .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
-            .map(|stream| DataStream::Tcp(stream))
+            .and_then(|addr| TcpStream::connect(addr).map_err(FtpError::ConnectionError))
+            .map(DataStream::Tcp)
     }
 
     /// Execute command which send data back in a separate stream

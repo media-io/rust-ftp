@@ -23,10 +23,7 @@ impl DataStream {
 
     /// Test if the stream is secured
     pub fn is_ssl(&self) -> bool {
-        match *self {
-            DataStream::Ssl(_) => true,
-            _ => false,
-        }
+        matches!(*self, DataStream::Ssl(_))
     }
 }
 
